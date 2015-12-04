@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <terraferma_options>
   <geometry>
     <dimension>
@@ -37,7 +37,7 @@
       <real_value rank="0">0.</real_value>
     </current_time>
     <finish_time>
-      <real_value rank="0">30.</real_value>
+      <real_value rank="0">31.</real_value>
     </finish_time>
     <timestep>
       <coefficient name="Timestep">
@@ -117,9 +117,9 @@ dx_top = dx(1)</string_value>
             </degree>
           </element>
           <initial_condition type="initial_condition" name="WholeMesh">
-            <file>
-              <string_value lines="1">compression_SolidFlow_0.xml</string_value>
-            </file>
+            <constant name="dim">
+              <real_value shape="2" dim1="dim" rank="1">0. 0.</real_value>
+            </constant>
           </initial_condition>
           <boundary_condition name="Left">
             <boundary_ids>
@@ -170,8 +170,7 @@ dx_top = dx(1)</string_value>
       </type>
       <diagnostics>
         <include_in_visualization/>
-        <include_in_statistics>
-          </include_in_statistics>
+        <include_in_statistics/>
         <include_in_steady_state>
           <norm>
             <string_value>l2</string_value>
@@ -194,16 +193,15 @@ dx_top = dx(1)</string_value>
             </degree>
           </element>
           <initial_condition type="initial_condition" name="WholeMesh">
-            <file>
-              <string_value lines="1">compression_SolidFlow_0.xml</string_value>
-            </file>
+            <constant>
+              <real_value rank="0">0.</real_value>
+            </constant>
           </initial_condition>
         </rank>
       </type>
       <diagnostics>
         <include_in_visualization/>
-        <include_in_statistics>
-          </include_in_statistics>
+        <include_in_statistics/>
         <include_in_steady_state>
           <norm>
             <string_value>l2</string_value>
@@ -376,6 +374,56 @@ dp_B =0 is mise
       </type>
       <diagnostics/>
     </coefficient>
+    <nonlinear_solver name="eta_0">
+      <type name="SNES">
+        <form name="Residual" rank="0">
+          <string_value lines="20" type="code" language="python">bv = (inner(sym(grad(v_t)), 2.*eta_0*sym(grad(v_i))) - div(v_t)*p_i - inner(v_t,f_i)/L2h2)
+bp = -p_t*div(v_i)
+
+rv = bv*dx_bottom + bv*dx_top
+rp = bp*dx_bottom + bp*dx_top
+
+F = rv + rp</string_value>
+          <ufl_symbol name="solver">
+            <string_value lines="1">F</string_value>
+          </ufl_symbol>
+        </form>
+        <form name="Jacobian" rank="1">
+          <string_value lines="20" type="code" language="python">J = derivative(F,us_i,us_a)</string_value>
+          <ufl_symbol name="solver">
+            <string_value lines="1">J</string_value>
+          </ufl_symbol>
+        </form>
+        <quadrature_degree>
+          <integer_value rank="0">8</integer_value>
+        </quadrature_degree>
+        <quadrature_rule name="canonical"/>
+        <snes_type name="ls">
+          <ls_type name="cubic"/>
+          <convergence_test name="default"/>
+        </snes_type>
+        <relative_error>
+          <real_value rank="0">1.e-6</real_value>
+        </relative_error>
+        <absolute_error>
+          <real_value rank="0">1.e-11</real_value>
+        </absolute_error>
+        <max_iterations>
+          <integer_value rank="0">10</integer_value>
+        </max_iterations>
+        <monitors>
+          <residual/>
+        </monitors>
+        <linear_solver>
+          <iterative_method name="preonly"/>
+          <preconditioner name="lu">
+            <factorization_package name="umfpack"/>
+          </preconditioner>
+        </linear_solver>
+        <never_ignore_solver_failures/>
+      </type>
+      <solve name="at_start"/>
+    </nonlinear_solver>
     <nonlinear_solver name="Picard">
       <type name="Picard">
         <preamble>
@@ -434,57 +482,57 @@ Fn = rv + rp</string_value>
         </linear_solver>
         <ignore_all_solver_failures/>
       </type>
-    <solve name="in_timeloop"/></nonlinear_solver>
+      <solve name="in_timeloop"/>
+    </nonlinear_solver>
     <functional name="VelocityL2deltausquared">
-            <string_value lines="20" type="code" language="python">L2change = inner(us_i - us_n, us_i - us_n)*dx</string_value>
-            <ufl_symbol name="functional">
-              <string_value lines="1">L2change</string_value>
-            </ufl_symbol>
-            <quadrature_rule name="default"/>
-          <include_in_statistics/></functional>
-          <functional name="VelocityL2usquared">
-            <string_value lines="20" type="code" language="python">L2u2 = inner(us_i,us_i)*dx</string_value>
-            <ufl_symbol name="functional">
-              <string_value lines="1">L2u2</string_value>
-            </ufl_symbol>
-            <quadrature_rule name="default"/>
-          <include_in_statistics/></functional>
-          <functional name="VelocityL2deltavsquared">
-            <string_value lines="20" type="code" language="python">L2changev= inner(v_i - v_n, v_i - v_n)*dx</string_value>
-            <ufl_symbol name="functional">
-              <string_value lines="1">L2changev</string_value>
-            </ufl_symbol>
-            <quadrature_rule name="default"/>
-          <include_in_statistics/></functional>
-          <functional name="VelocityL2vsquared">
-            <string_value lines="20" type="code" language="python">L2v2 = inner(v_i,v_i)*dx</string_value>
-            <ufl_symbol name="functional">
-              <string_value lines="1">L2v2</string_value>
-            </ufl_symbol>
-            <quadrature_rule name="default"/>
-          <include_in_statistics/></functional>
-        <functional name="PressureIntegral">
-            <string_value lines="20" type="code" language="python">int = p*dx</string_value>
-            <ufl_symbol name="functional">
-              <string_value lines="1">int</string_value>
-            </ufl_symbol>
-            <quadrature_rule name="default"/>
-          <include_in_statistics/></functional>
-          <functional name="PressureL2deltapsquared">
-            <string_value lines="20" type="code" language="python">L2changep= (p_i - p_n)**2*dx</string_value>
-            <ufl_symbol name="functional">
-              <string_value lines="1">L2changep</string_value>
-            </ufl_symbol>
-            <quadrature_rule name="default"/>
-          <include_in_statistics/></functional>
-          <functional name="PressureL2psquared">
-            <string_value lines="20" type="code" language="python">L2p2= p_i*p_i*dx</string_value>
-            <ufl_symbol name="functional">
-              <string_value lines="1">L2p2</string_value>
-            </ufl_symbol>
-            <quadrature_rule name="default"/>
-          <include_in_statistics/></functional>
-        </system>
+      <string_value lines="20" type="code" language="python">L2change = inner(us_i - us_n, us_i - us_n)*dx</string_value>
+      <ufl_symbol name="functional">
+        <string_value lines="1">L2change</string_value>
+      </ufl_symbol>
+      <quadrature_rule name="default"/>
+      <include_in_statistics/>
+    </functional>
+    <functional name="VelocityL2usquared">
+      <string_value lines="20" type="code" language="python">L2u2 = inner(us_i,us_i)*dx</string_value>
+      <ufl_symbol name="functional">
+        <string_value lines="1">L2u2</string_value>
+      </ufl_symbol>
+      <quadrature_rule name="default"/>
+      <include_in_statistics/>
+    </functional>
+    <functional name="VelocityL2deltavsquared">
+      <string_value lines="20" type="code" language="python">L2changev= inner(v_i - v_n, v_i - v_n)*dx</string_value>
+      <ufl_symbol name="functional">
+        <string_value lines="1">L2changev</string_value>
+      </ufl_symbol>
+      <quadrature_rule name="default"/>
+      <include_in_statistics/>
+    </functional>
+    <functional name="VelocityL2vsquared">
+      <string_value lines="20" type="code" language="python">L2v2 = inner(v_i,v_i)*dx</string_value>
+      <ufl_symbol name="functional">
+        <string_value lines="1">L2v2</string_value>
+      </ufl_symbol>
+      <quadrature_rule name="default"/>
+      <include_in_statistics/>
+    </functional>
+    <functional name="PressureL2deltapsquared">
+      <string_value lines="20" type="code" language="python">L2changep= (p_i - p_n)**2*dx</string_value>
+      <ufl_symbol name="functional">
+        <string_value lines="1">L2changep</string_value>
+      </ufl_symbol>
+      <quadrature_rule name="default"/>
+      <include_in_statistics/>
+    </functional>
+    <functional name="PressureL2psquared">
+      <string_value lines="20" type="code" language="python">L2p2= p_i*p_i*dx</string_value>
+      <ufl_symbol name="functional">
+        <string_value lines="1">L2p2</string_value>
+      </ufl_symbol>
+      <quadrature_rule name="default"/>
+      <include_in_statistics/>
+    </functional>
+  </system>
   <system name="Divergence">
     <mesh name="Mesh"/>
     <ufl_symbol name="global">
@@ -568,8 +616,9 @@ r = bd*dx_bottom + bd*dx_top</string_value>
         </linear_solver>
         <never_ignore_solver_failures/>
       </type>
-    <solve name="with_diagnostics"/></nonlinear_solver>
-    </system>
+      <solve name="with_diagnostics"/>
+    </nonlinear_solver>
+  </system>
   <system name="Viscosity">
     <mesh name="Mesh"/>
     <ufl_symbol name="global">
@@ -645,8 +694,9 @@ r = bv0*dx_bottom + bv*dx_top</string_value>
         </linear_solver>
         <never_ignore_solver_failures/>
       </type>
-    <solve name="with_diagnostics"/></nonlinear_solver>
-    </system>
+      <solve name="with_diagnostics"/>
+    </nonlinear_solver>
+  </system>
   <system name="J2">
     <mesh name="Mesh"/>
     <ufl_symbol name="global">
@@ -721,8 +771,9 @@ F = bp*dx_bottom + bp*dx_top</string_value>
         </linear_solver>
         <never_ignore_solver_failures/>
       </type>
-    <solve name="with_diagnostics"/></nonlinear_solver>
-    </system>
+      <solve name="with_diagnostics"/>
+    </nonlinear_solver>
+  </system>
   <system name="e2">
     <mesh name="Mesh"/>
     <ufl_symbol name="global">
@@ -797,8 +848,9 @@ F = be*dx_bottom + be*dx_top</string_value>
         </linear_solver>
         <never_ignore_solver_failures/>
       </type>
-    <solve name="with_diagnostics"/></nonlinear_solver>
-    </system>
+      <solve name="with_diagnostics"/>
+    </nonlinear_solver>
+  </system>
   <system name="Ptotal">
     <mesh name="Mesh"/>
     <ufl_symbol name="global">
@@ -873,6 +925,7 @@ r = bpt*dx_bottom + bpt*dx_top</string_value>
         </linear_solver>
         <never_ignore_solver_failures/>
       </type>
-    <solve name="with_diagnostics"/></nonlinear_solver>
-    </system>
+      <solve name="with_diagnostics"/>
+    </nonlinear_solver>
+  </system>
 </terraferma_options>

@@ -37,6 +37,12 @@
             <string_value lines="1">1. 2. 5.</string_value>
           </values>
         </parameter>
+        <parameter name="Phi">
+          <values>
+            <string_value lines="1">30</string_value>
+            <comment>available isovisc, von_mises, drucker_prager, depth_dependent_von_mises</comment>
+          </values>
+        </parameter>
         <parameter name="plasticity_model">
           <values>
             <string_value lines="1">von_mises depth_dependent_von_mises drucker_prager</string_value>
@@ -60,6 +66,8 @@ tau_0 = 2.*eta_0*edot_0  # reference stress
 # dimensionless parameters
 L2_on_h2 = eta_0*edot_0/rho/g/h
 
+phi = float(Phi)*pi/180.
+
 if (plasticity_model == 'von_mises'):
 	C = 1.e8
 	A = C/eta_0/edot_0
@@ -67,7 +75,6 @@ if (plasticity_model == 'von_mises'):
 	alpha = 0. 
 	print 'using von_mises plasticity A={0}, B={1}, alpha={2}'.format(A,B,alpha)
 elif (plasticity_model == 'drucker_prager'):
-	phi = 30.*pi/180.
 	C = 1.e8
 	A = C*cos(phi)/eta_0/edot_0
 	B = sin(phi)
@@ -79,7 +86,6 @@ elif (plasticity_model == 'isovisc'):
 	alpha  = 0.
 	print 'using iso viscous plasticity model A={0}, B={1}, alpha={2}'.format(A,B,alpha)
 elif (plasticity_model == 'depth_dependent_von_mises'):
-	phi = 30.*pi/180.
 	C = 1.e8
 	A = C*cos(phi)/eta_0/edot_0
 	B = sin(phi)
@@ -180,14 +186,16 @@ def maprheology(pm):
   else: 
     return pm.replace('_',' ') 
 
-notch =  L2ResPicard.__dict__["parameters"]["notch"]
-eta_2 =  L2ResPicard.__dict__["parameters"]["eta_2"]
-model = L2ResPicard.__dict__["parameters"]["plasticity_model"]
-u0scaled = L2ResPicard.__dict__["parameters"]["u0scaled"]
+notch =  L2ResPicard.parameters["notch"]
+eta_2 =  L2ResPicard.parameters["eta_2"]
+model = L2ResPicard.parameters["plasticity_model"]
+u0scaled = L2ResPicard.parameters["u0scaled"]
+Phi = L2ResPicard.parameters["Phi"][-1]
 
-print model
-print notch
-print eta_2
+print 'model = ',model
+print 'notch = ',notch
+print 'eta_2 = ',eta_2
+print 'Phi = ',Phi
 
 eta = [ float(eta_2[i]) for i in range(len(eta_2)) ]
 
@@ -202,7 +210,7 @@ for pm in model:
     color = iter(['r', 'g', 'b', 'k', 'y', 'c', 'm'])
     lt = next(linetype)
     for eta in eta_2:
-      adict = {"plasticity_model":pm,"eta_2":eta,"notch":style,"u0scaled":u0}
+      adict = {"plasticity_model":pm,"eta_2":eta,"notch":style,"u0scaled":u0,"Phi":Phi}
       c = next(color)
       L2ResidualP= L2ResPicard[adict]
       L2ResidualN= L2ResNewton[adict]
@@ -211,18 +219,15 @@ for pm in model:
       pl.semilogy(itP,L2ResidualP,color=c,linestyle=lt,marker='o')
       pl.hold(True)
       eta_s = scitolatex(eta)
-      pl.semilogy(itN,L2ResidualN,linestyle=lt,color = c,marker = 's',label='$\\eta={0}$: $U_0={1}$'.format(eta_s,u0))
+      pl.semilogy(itN,L2ResidualN,linestyle=lt,color = c,marker = 's',label='$\\eta={0}$: $U_0={1}$'.format(eta_s,float(u0)*2.5))
 
-  if 'depth' in pm:
-    loc = (0.57,0.01)
-  else:
-    loc = 'best'
-  pl.legend(loc=loc,fontsize=8.5)
+  loc = 'upper center'  
+  pl.ylim([1.e-13,1.e5])
+  pl.legend(ncol=3,loc=loc,fontsize=10.,numpoints=2)
   pl.xlabel('Iterations')
   pl.ylabel('$||F||_2$')
   pl.title('{0}'.format(maprheology(pm)))
-  pl.savefig('Convergence_{0}_picard_newton.pdf'.format(pm))
-  </string_value>
+  pl.savefig('Convergence_{0}_Phi_{1}_picard_newton.pdf'.format(pm,Phi))</string_value>
       <comment>try to get fancy and make single convergence plot for the composite solver</comment>
     </test>
     <test name="Pmax">
@@ -232,15 +237,70 @@ for pm in model:
       <string_value lines="20" type="code" language="python">print pMin</string_value>
     </test>
     <test name="dsdp_max">
-      <string_value lines="20" type="code" language="python">eta_2 = L2ResNewton.parameters["eta_2"]
+      <string_value lines="20" type="code" language="python">import numpy as np
+eta_2 = L2ResNewton.parameters["eta_2"]
 u0scaled  = L2ResNewton.parameters["u0scaled"]
+phi = L2ResNewton.parameters["Phi"][-1]
+print phi
+Cmax = np.sqrt(2.)*np.sin(float(phi)*np.pi/180.)
+print Cmax
 
-print "eta_2, u0, ||F||_2 (N), |dS/dp|+_max"
+# calculate heuristic
+A = 1.e8*np.cos(float(phi)*np.pi/180.)
+h = 30000.
+U0 = 2.5e-3       # compression velocity m/yr
+yr_per_s = 1./3600./365.25/24.
+
+edot_0 = U0*yr_per_s/h  # reference strain_rate
+r = 0.02
+
+def scitolatex(str):
+  '''utility script to convert scientific notation numbers like
+    1.e23 to latex formatable numbers 10^23
+  ''' 
+  split = str.split('.')
+  split[0] = split[0]+'\\times' 
+  split[1] = split[1].replace('e','10^{')+'}'
+
+  return split[0]+split[1]
+  
+def isconverged(res):
+  if float(res) &lt; 1.e-6:
+    return 'yes'
+  else:
+    return 'no'
+    
+# set up tex table    
+table0 = []
+table0.append("\\begin{tabular}{lllllll}\n")
+table0.append("\\toprule\n")
+table0.append("$\eta_2$ &amp; $U_0$ &amp; $||\\vec F||_2$ &amp; $|\\partial \\tau/ \\partial p'|_\\text{max}$ &amp; 1 - $|\\partial \\tau/\\partial p'|_\\text{max}/\\Theta_\\text{max}$ &amp; $\\Theta^{*}$ &amp; Converged \\\\\n")
+table0.append("\\midrule\n")
+ 
+print "eta_2, u0, ||F||_2 (N), |dtau/dp|_max, rel diff C_max, C*"
 for eta in eta_2:
   for u0 in u0scaled:
-    slice={"eta_2":eta,"u0scaled":u0,"plasticity_model":"drucker_prager"}
+    slice={"eta_2":eta,"u0scaled":u0,"plasticity_model":"drucker_prager","Phi":phi}
     res = L2ResNewton[slice][-1]
-    print "{0}\t{1}\t{2:e}\t{3:f}".format(eta, u0, res, dsdp_max[slice])</string_value>
+    eta_p = A*r/edot_0/float(u0)
+    #print eta_p, eta, eta_p/float(eta) 
+    Cstar = 1.- (1./(1. + eta_p/float(eta)))**2
+    string="${0}$\t{1}\t{2:e}\t{3:f}\t{4:e}\t{5:e}\t{6}".format(scitolatex(eta), float(u0)*2.5, res, dsdp_max[slice],1. - float(dsdp_max[slice])/Cmax,Cstar,isconverged(res))
+    stringtex=string.replace('\t',' &amp; ')
+    print string
+    table0.append(stringtex+' \\\\\n')
+
+
+table0.append("\\bottomrule\n")
+table0.append("\\end{tabular}\n")
+
+#for line in table0:
+  #print line[0:-1]
+
+filename = "table_Phi_{0}.tex".format(phi)
+filehandle = file(filename, 'w')
+filehandle.writelines(table0)
+filehandle.close()</string_value>
     </test>
   </tests>
 </harness_options>

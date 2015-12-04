@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <harness_options>
   <length>
-    <string_value>short</string_value>
+    <string_value lines="1">short</string_value>
   </length>
   <owner>
     <string_value lines="1">mspieg</string_value>
@@ -111,103 +111,12 @@ meshfile = glob('../../mesh/compression_mesh*.xml.gz')</string_value>
           </python>
         </filenames>
       </required_input>
-      <dependencies>
-        <simulation name="init">
-          <input_file>
-            <string_value lines="1" type="filename">compression_init.tfml</string_value>
-          </input_file>
-          <run_when name="input_changed_or_output_missing"/>
-          <parameter_sweep>
-            <parameter name="eta_1"/>
-            <parameter name="eta_2"/>
-            <parameter name="notch"/>
-            <parameter name="plasticity_model">
-              <update>
-                <string_value lines="20" type="code" language="python">import libspud
-from math import pi, cos, sin
-
-# initialize scaling parameters
-h = 30000.  # system height in m
-eta_0 = 1.e22   # reference viscosity (Pa s)
-u0 = 2.5e-3       # compression velocity m/yr
-rho = 2700.       # density
-g = 9.81		  # gravity
-yr_per_s = 1./3600./365.25/24.
-
-edot_0 = u0*yr_per_s/h  # reference strain_rate
-tau_0 = 2.*eta_0*edot_0  # reference stress
-
-# dimensionless parameters
-L2_on_h2 = eta_0*edot_0/rho/g/h
-
-if (plasticity_model == 'von_mises'):
-	C = 1.e8
-	A = C/eta_0/edot_0
-	B = 0.
-	alpha = 0. 
-	print 'using von_mises plasticity A={0}, B={1}, alpha={2}'.format(A,B,alpha)
-elif (plasticity_model == 'drucker_prager'):
-	phi = 30.*pi/180.
-	C = 1.e8
-	A = C*cos(phi)/eta_0/edot_0
-	B = sin(phi)
-	alpha = 1.
-	print 'using drucker_prager plasticity A={0}, B={1}, alpha={2}'.format(A,B,alpha)
-elif (plasticity_model == 'isovisc'):
-	A = 1.e10
-	B = 1.e10
-	alpha  = 0.
-	print 'using iso viscous plasticity model A={0}, B={1}, alpha={2}'.format(A,B,alpha)
-elif (plasticity_model == 'depth_dependent_von_mises'):
-	phi = 30.*pi/180.
-	C = 1.e8
-	A = C*cos(phi)/eta_0/edot_0
-	B = sin(phi)
-	alpha = 0.
-	print 'using depth_dependent_von_mises plasticity A={0}, B={1}, alpha={2}'.format(A,B,alpha)
-else:
-	print 'cant find plasticity model {0}'.format(plasticity_model)
-
-
-# set the parameters in the tfml file
-# choose a mesh
-if ( notch == 'square'):
-	libspud.set_option("/geometry/mesh::Mesh/source::File/file","compression_mesh")
-elif ( notch == 'round'):
-	libspud.set_option("/geometry/mesh::Mesh/source::File/file","compression_mesh_rounded")
-elif ( notch == 'round_refine'):
-	libspud.set_option("/geometry/mesh::Mesh/source::File/file","compression_mesh_rounded_refine")
-
-
-
-# set scalar constants
-libspud.set_option("/system::SolidFlow/coefficient::L2h2/type::Constant/rank::Scalar/value::WholeMesh/constant",L2_on_h2)
-libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Bottom/constant",eta_0/float(eta_1))
-libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Top/constant",eta_0/float(eta_2))
-libspud.set_option("/system::SolidFlow/coefficient::dp_A/type::Expression/rank::Scalar/value::Top/constant",float(A))
-libspud.set_option("/system::SolidFlow/coefficient::dp_B/type::Expression/rank::Scalar/value::Top/constant",float(B))</string_value>
-                <single_build/>
-              </update>
-            </parameter>
-          </parameter_sweep>
-          <required_input>
-            <filenames name="meshfile">
-              <python>
-                <string_value lines="20" type="code" language="python">from glob import glob
-meshfile = glob('../../mesh/compression_mesh*.xml.gz')</string_value>
-              </python>
-            </filenames>
-          </required_input>
-          <required_output>
-            <filenames name="InitialVP">
-              <string>
-                <string_value lines="1" type="filename">compression_SolidFlow_0.xml</string_value>
-              </string>
-            </filenames>
-          </required_output>
-        </simulation>
-      </dependencies>
       <variables>
+        <variable name="L2ResNewton0">
+          <string_value lines="20" type="code" language="python">from buckettools.statfile import parser
+conv = parser("compression_SolidFlow_Solver0_snes.conv")
+L2ResNewton0= conv["SolidFlow"]["res_norm(l2)"]</string_value>
+        </variable>
         <variable name="L2ResNewton">
           <string_value lines="20" type="code" language="python">from buckettools.statfile import parser
 conv = parser("compression_SolidFlow_Solver_snes.conv")
@@ -256,9 +165,9 @@ def maprheology(pm):
   else: 
     return pm.replace('_',' ') 
     
-notch =  L2ResNewton.__dict__["parameters"]["notch"]
-eta_2 =  L2ResNewton.__dict__["parameters"]["eta_2"]
-model = L2ResNewton.__dict__["parameters"]["plasticity_model"]
+notch =  L2ResNewton.parameters["notch"]
+eta_2 =  L2ResNewton.parameters["eta_2"]
+model = L2ResNewton.parameters["plasticity_model"]
 color = iter(['r', 'g', 'b', 'k', 'y', 'c'])
 
 print model
@@ -275,7 +184,9 @@ for eta in eta_2:
 	color = iter(['r', 'g', 'b', 'k', 'y', 'c'])
 	c = next(color)	
 	adict = {"plasticity_model":pm,"eta_2":eta,"notch":style}
-	L2ResidualN= L2ResNewton[adict]
+	L2N0= L2ResNewton0[adict]
+	L2N= L2ResNewton[adict][:-51] # lop off the last 50 points
+	L2ResidualN = np.concatenate((L2N0,L2N))
 	itN = np.arange(len(L2ResidualN))
 	pl.semilogy(itN,L2ResidualN,'-s'+c,label='$\\eta_2={0}$'.format(scitolatex(eta)))
 
