@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <harness_options>
   <length>
-    <string_value>short</string_value>
+    <string_value lines="1">short</string_value>
   </length>
   <owner>
     <string_value lines="1">mspieg</string_value>
@@ -229,7 +229,7 @@ for pm in model:
   pl.xlabel('Iterations')
   pl.ylabel('$||F||_2$')
   pl.title('{0}'.format(maprheology(pm)))
-  pl.savefig('Convergence_{0}_Phi_{1}_picard_newton.pdf'.format(pm,Phi))</string_value>
+  pl.savefig('Convergence_{0}_Phi_{1}_picard_newton_single.pdf'.format(pm,Phi))</string_value>
       <comment>try to get fancy and make single convergence plot for the composite solver</comment>
     </test>
     <test name="Pmax">
@@ -237,54 +237,6 @@ for pm in model:
     </test>
     <test name="Pmin">
       <string_value lines="20" type="code" language="python">print pMin</string_value>
-    </test>
-    <test name="dsdp_max">
-      <string_value lines="20" type="code" language="python">import numpy as np
-eta_2 = L2ResNewton.parameters["eta_2"]
-u0scaled  = L2ResNewton.parameters["u0scaled"]
-phi = L2ResNewton.parameters["Phi"][-1]
-print phi
-Cmax = np.sqrt(2.)*np.sin(float(phi)*np.pi/180.)
-print Cmax
-
-def scitolatex(str):
-  '''utility script to convert scientific notation numbers like
-    1.e23 to latex formatable numbers 10^23
-  ''' 
-  split = str.split('.')
-  split[0] = split[0]+'\\times' 
-  split[1] = split[1].replace('e','10^{')+'}'
-
-  return split[0]+split[1]
-  
-# set up tex table    
-table0 = []
-table0.append("\\begin{tabular}{ccccc}\n")
-table0.append("\hline\n")
-table0.append("$\eta_2$ &amp; $U_0$ &amp; $||F||_2$ &amp; $|d\\tau/dp|_{max}$ &amp; 1 - $|d\\tau/dp|_{max}/C_{max}$  \\\\\n")
-table0.append("\hline\n")
- 
-print "eta_2, u0, ||F||_2 (N), |dtau/dp|_max, rel diff C_max"
-for eta in eta_2:
-  for u0 in u0scaled:
-    slice={"eta_2":eta,"u0scaled":u0,"plasticity_model":"drucker_prager","Phi":phi}
-    res = L2ResNewton[slice][-1]
-    string="${0}$\t{1}\t{2:e}\t{3:f}\t{4:e}".format(scitolatex(eta), float(u0)*2.5, res, dsdp_max[slice],1. - float(dsdp_max[slice])/Cmax)
-    stringtex=string.replace('\t',' &amp; ')
-    print string
-    table0.append(stringtex+'\\\\\n')
-
-
-table0.append("\hline\n")
-table0.append("\\end{tabular}\n")
-
-#for line in table0:
-  #print line[0:-1]
-
-filename = "table_Phi_{0}.tex".format(phi)
-filehandle = file(filename, 'w')
-filehandle.writelines(table0)
-filehandle.close()</string_value>
     </test>
   </tests>
 </harness_options>
