@@ -26,6 +26,7 @@ This repo contains the directories
 	```bash
 		$ tfsimulationharness --test <filename>.shml
 	```
+
 where `<filename>.shml` is the name of the *simulation harness* file that controls parameter sweeps,  organizes multiple runs, collects data and produces PDF plots of the results.  The actual models are described in the *TerraFERMA* markup language files with suffix `.tfml`.
 
 * **Viewing Input files:**  both `.tfml` and `.shml` files can be viewed and manipulated using the [SPuD](https://www.imperial.ac.uk/engineering/departments/earth-science/research/research-groups/amcg/software/spud/) gui `diamond` i.e
