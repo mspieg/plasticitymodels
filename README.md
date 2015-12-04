@@ -1,4 +1,4 @@
-# README #
+# Plasticity Models #
 
 This repository contains supplementary [*TerraFERMA*](http://terraferma.github.io) model files to accompany the paper 
 
