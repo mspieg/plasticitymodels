@@ -23,18 +23,18 @@ This repo contains the directories
 
 * **Running Models:** Once the software is installed models can be run from within each subdirectory using
 
-	```bash
-		$ tfsimulationharness --test <filename>.shml
+	```
+			$ tfsimulationharness --test <filename>.shml
 	```
 
 	where `<filename>.shml` is the name of the *simulation harness* file that controls parameter sweeps,  organizes multiple runs, collects data and produces PDF plots of the results.  The actual models are described in the *TerraFERMA* markup language files with suffix `.tfml`.
 
 * **Viewing Input files:**  both `.tfml` and `.shml` files can be viewed and manipulated using the [SPuD](https://www.imperial.ac.uk/engineering/departments/earth-science/research/research-groups/amcg/software/spud/) gui `diamond` i.e
 
-	```bash
+	```
 		$ diamond <filename>.tfml
 	```
 
 
 ### Questions and Comments ###
-Please address any questions or comments on these files through the [issue tracker](https://bitbucket.org/mspieg/plasticitymodels/issues?status=new&status=open) or send e-mail to <mspieg@ldeo.columbia.edu>
+Please address any questions or comments through the [issue tracker](https://bitbucket.org/mspieg/plasticitymodels/issues?status=new&status=open) 
