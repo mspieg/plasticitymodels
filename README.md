@@ -8,10 +8,11 @@ This repository contains supplementary [*TerraFERMA*](http://terraferma.github.i
 ### Contents ###
 This repo contains the directories
 
-* **solver_strategies:** Directories containing input files for describing and running three different models and producing Figures 2,3,5,6 and 10 in the paper
-	* **successive_substitution:** Picard iteration/Approximate Newton methods
-	* **newton:** Hybrid Picard-Newton schemes
-	* **alpha-continuation:** Newton with continuation in the $\alpha$ parameter
+* **solver_strategies:** Directories containing input files for describing and running three different models and producing Figures 2,3,5 and 7 in the paper
+	* **successive_substitution:** Picard iteration/Approximate Newton methods (Figure 2)
+	* **newton-convergence**: (Figure 3)
+	* **newton:** Hybrid Picard-Newton schemes (Figure 5 and data for Figure 6)
+	* **alpha-continuation:** Newton with continuation in the $\alpha$ parameter (Figure 7 and data for Figure 8)
 * **meshes:** gmsh input files and Dolfin Meshes used in the models
 * **paraview:** Paraview State files for assisting visualization of model results
 
