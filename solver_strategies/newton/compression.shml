@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <harness_options>
   <length>
-    <string_value>short</string_value>
+    <string_value lines="1">short</string_value>
   </length>
   <owner>
     <string_value lines="1">mspieg</string_value>
@@ -18,12 +18,12 @@
       <parameter_sweep>
         <parameter name="eta_1">
           <values>
-            <string_value lines="1">1.e21</string_value>
+            <string_value lines="1">1.e23 1.e24 5.e24</string_value>
           </values>
         </parameter>
         <parameter name="eta_2">
           <values>
-            <string_value lines="1">1.e23 1.e24 5.e24</string_value>
+            <string_value lines="1">1.e21</string_value>
           </values>
         </parameter>
         <parameter name="notch">
@@ -108,8 +108,8 @@ else:
 
 # set scalar constants
 libspud.set_option("/system::SolidFlow/coefficient::L2h2/type::Constant/rank::Scalar/value::WholeMesh/constant",L2_on_h2)
-libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Bottom/constant",eta_0/float(eta_1))
-libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Top/constant",eta_0/float(eta_2))
+libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Bottom/constant",eta_0/float(eta_2))
+libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Top/constant",eta_0/float(eta_1))
 libspud.set_option("/system::SolidFlow/coefficient::dp_A/type::Expression/rank::Scalar/value::Top/constant",float(A))
 libspud.set_option("/system::SolidFlow/coefficient::dp_B/type::Expression/rank::Scalar/value::Top/constant",float(B))
 libspud.set_option("/system::SolidFlow/coefficient::alpha/type::Constant/rank::Scalar/value::WholeMesh/constant",float(alpha))
@@ -162,6 +162,8 @@ dsdp_max = stat["NormdSdp"]["dsdp"]["max"][-1]</string_value>
 import matplotlib
 # set a display independent backend
 matplotlib.use('Agg')
+matplotlib.rc('text', usetex=True)
+matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
 import matplotlib.pyplot as pl
 
 def scitolatex(str):
@@ -187,18 +189,18 @@ def maprheology(pm):
     return pm.replace('_',' ') 
 
 notch =  L2ResPicard.parameters["notch"]
-eta_2 =  L2ResPicard.parameters["eta_2"]
+eta_1 =  L2ResPicard.parameters["eta_1"]
 model = L2ResPicard.parameters["plasticity_model"]
 u0scaled = L2ResPicard.parameters["u0scaled"]
 Phi = L2ResPicard.parameters["Phi"][-1]
 
 print 'model = ',model
 print 'notch = ',notch
-print 'eta_2 = ',eta_2
+print 'eta_1 = ',eta_1
 print 'Phi = ',Phi
 
-eta = [ float(eta_2[i]) for i in range(len(eta_2)) ]
-
+eta = [ float(eta_1[i]) for i in range(len(eta_1)) ]
+ticks = 10**np.linspace(-12,2,8)
 print eta
 
 style = notch[0]
@@ -209,8 +211,8 @@ for pm in model:
   for u0 in u0scaled:
     color = iter(['r', 'g', 'b', 'k', 'y', 'c', 'm'])
     lt = next(linetype)
-    for eta in eta_2:
-      adict = {"plasticity_model":pm,"eta_2":eta,"notch":style,"u0scaled":u0,"Phi":Phi}
+    for eta in eta_1:
+      adict = {"plasticity_model":pm,"eta_1":eta,"notch":style,"u0scaled":u0,"Phi":Phi}
       c = next(color)
       L2ResidualP= L2ResPicard[adict]
       L2ResidualN= L2ResNewton[adict]
@@ -219,14 +221,20 @@ for pm in model:
       pl.semilogy(itP,L2ResidualP,color=c,linestyle=lt,marker='o')
       pl.hold(True)
       eta_s = scitolatex(eta)
-      pl.semilogy(itN,L2ResidualN,linestyle=lt,color = c,marker = 's',label='$\\eta={0}$: $U_0={1}$'.format(eta_s,float(u0)*2.5))
+      pl.semilogy(itN,L2ResidualN,linestyle=lt,color = c,marker = 's',label='$\\eta_1={0}$: $U_0={1}$'.format(eta_s,float(u0)*2.5))
 
-  loc = 'upper center'  
-  pl.ylim([1.e-13,1.e5])
-  pl.legend(ncol=3,loc=loc,fontsize=10.,numpoints=2)
-  pl.xlabel('Iterations')
-  pl.ylabel('$||F||_2$')
-  pl.title('{0}'.format(maprheology(pm)))
+  #loc = 'upper center'  
+  pl.gca().set_yticks(ticks)
+  pl.tick_params(axis='both', which='major', labelsize=18)
+  loc = 'center right'
+  #pl.ylim([1.e-13,1.e5])
+  pl.xlim([0,140])
+  #pl.legend(ncol=3,loc=loc,fontsize=10.,numpoints=2)
+  if pm == 'von_mises':
+    pl.legend(loc=loc,fontsize=18,numpoints=2)
+  pl.xlabel('Iterations',fontsize=20)
+  pl.ylabel('$||\\boldsymbol{F}||_2$',fontsize=20)
+  pl.title('{0}'.format(maprheology(pm)),fontsize=20)
   pl.savefig('Convergence_{0}_Phi_{1}_picard_newton.pdf'.format(pm,Phi))</string_value>
       <comment>try to get fancy and make single convergence plot for the composite solver</comment>
     </test>
@@ -238,7 +246,7 @@ for pm in model:
     </test>
     <test name="dsdp_max">
       <string_value lines="20" type="code" language="python">import numpy as np
-eta_2 = L2ResNewton.parameters["eta_2"]
+eta_1 = L2ResNewton.parameters["eta_1"]
 u0scaled  = L2ResNewton.parameters["u0scaled"]
 phi = L2ResNewton.parameters["Phi"][-1]
 print phi
@@ -274,13 +282,13 @@ def isconverged(res):
 table0 = []
 table0.append("\\begin{tabular}{lllllll}\n")
 table0.append("\\toprule\n")
-table0.append("$\eta_2$ &amp; $U_0$ &amp; $||\\vec F||_2$ &amp; $|\\partial \\tau/ \\partial p'|_\\text{max}$ &amp; 1 - $|\\partial \\tau/\\partial p'|_\\text{max}/\\Theta_\\text{max}$ &amp; $\\Theta^{*}$ &amp; Converged \\\\\n")
+table0.append("$\eta_1$ &amp; $U_0$ &amp; $||\\vec F||_2$ &amp; $|\\partial \\tau/ \\partial p'|_\\text{max}$ &amp; 1 - $|\\partial \\tau/\\partial p'|_\\text{max}/\\Theta_\\text{max}$ &amp; $\\Theta^{*}$ &amp; Converged \\\\\n")
 table0.append("\\midrule\n")
  
-print "eta_2, u0, ||F||_2 (N), |dtau/dp|_max, rel diff C_max, C*"
-for eta in eta_2:
+print "eta_1, u0, ||F||_2 (N), |dtau/dp|_max, rel diff C_max, C*"
+for eta in eta_1:
   for u0 in u0scaled:
-    slice={"eta_2":eta,"u0scaled":u0,"plasticity_model":"drucker_prager","Phi":phi}
+    slice={"eta_1":eta,"u0scaled":u0,"plasticity_model":"drucker_prager","Phi":phi}
     res = L2ResNewton[slice][-1]
     eta_p = A*r/edot_0/float(u0)
     #print eta_p, eta, eta_p/float(eta) 
