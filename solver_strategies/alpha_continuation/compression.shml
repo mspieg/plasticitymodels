@@ -18,12 +18,12 @@
       <parameter_sweep>
         <parameter name="eta_1">
           <values>
-            <string_value lines="1">1.e21</string_value>
+            <string_value lines="1">2.e24</string_value>
           </values>
         </parameter>
         <parameter name="eta_2">
           <values>
-            <string_value lines="1">2.e24</string_value>
+            <string_value lines="1">1.e21</string_value>
           </values>
         </parameter>
         <parameter name="notch">
@@ -95,8 +95,8 @@ elif ( notch == 'round_refine'):
 
 # set scalar constants
 libspud.set_option("/system::SolidFlow/coefficient::L2h2/type::Constant/rank::Scalar/value::WholeMesh/constant",L2_on_h2)
-libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Bottom/constant",eta_0/float(eta_1))
-libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Top/constant",eta_0/float(eta_2))
+libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Bottom/constant",eta_0/float(eta_2))
+libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Top/constant",eta_0/float(eta_1))
 libspud.set_option("/system::SolidFlow/coefficient::dp_A/type::Expression/rank::Scalar/value::Top/constant",float(A))
 libspud.set_option("/system::SolidFlow/coefficient::dp_B/type::Expression/rank::Scalar/value::Top/constant",float(B))</string_value>
             <single_build/>
@@ -141,6 +141,8 @@ pMin = stat["SolidFlow"]["Pressure"]["min"][-1]</string_value>
 import matplotlib
 # set a display independent backend
 matplotlib.use('Agg')
+matplotlib.rc('text', usetex=True)
+matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
 import matplotlib.pyplot as pl
 
 def scitolatex(str):
@@ -166,35 +168,38 @@ def maprheology(pm):
     return pm.replace('_',' ') 
     
 notch =  L2ResNewton.parameters["notch"]
-eta_2 =  L2ResNewton.parameters["eta_2"]
+eta_1 =  L2ResNewton.parameters["eta_1"]
 model = L2ResNewton.parameters["plasticity_model"]
 color = iter(['r', 'g', 'b', 'k', 'y', 'c'])
 
 print model
 print notch
-print eta_2
+print eta_1
 
-eta = [ float(eta_2[i]) for i in range(len(eta_2)) ]
+eta = [ float(eta_1[i]) for i in range(len(eta_1)) ]
 
 
 pm = 'drucker_prager'
 style = notch[0]
-for eta in eta_2:
-	pl.figure()
-	color = iter(['r', 'g', 'b', 'k', 'y', 'c'])
-	c = next(color)	
-	adict = {"plasticity_model":pm,"eta_2":eta,"notch":style}
-	L2N0= L2ResNewton0[adict]
-	L2N= L2ResNewton[adict][:-51] # lop off the last 50 points
-	L2ResidualN = np.concatenate((L2N0,L2N))
-	itN = np.arange(len(L2ResidualN))
-	pl.semilogy(itN,L2ResidualN,'-s'+c,label='$\\eta_2={0}$'.format(scitolatex(eta)))
+for eta in eta_1:
+  pl.figure()
+  color = iter(['r', 'g', 'b', 'k', 'y', 'c'])
+  c = next(color)	
+  adict = {"plasticity_model":pm,"eta_1":eta,"notch":style}
+  L2N0= L2ResNewton0[adict]
+  L2N= L2ResNewton[adict][:-30] # lop off the last 29 points
+  L2ResidualN = np.concatenate((L2N0,L2N))
+  itN = np.arange(len(L2ResidualN))
+  pl.semilogy(itN,L2ResidualN,'-s'+c,label='$\\eta_1={0}$ Pa s'.format(scitolatex(eta)))
 
-	pl.legend(loc='best')
-	pl.xlabel('Iterations')
-	pl.ylabel('$||F||_2$')
-	pl.title('Drucker Prager with $\\alpha$-Continuation')
-	pl.savefig('Convergence_{0}_eta{1}.pdf'.format(pm,eta))</string_value>
+  ticks = 10**np.linspace(-12,0,7)
+  pl.gca().set_yticks(ticks)
+  pl.tick_params(axis='both', which='major', labelsize=20)
+  pl.legend(loc='best',fontsize=16)
+  pl.xlabel('Iterations',fontsize=20)
+  pl.ylabel('$||\\boldsymbol{F}||_2$',fontsize=18)
+  pl.title('Drucker Prager with $\\alpha$-Continuation',fontsize=20)
+  pl.savefig('Convergence_{0}_eta{1}.pdf'.format(pm,eta))</string_value>
       <comment>try to get fancy and make single convergence plot for the composite solver</comment>
     </test>
   </tests>
