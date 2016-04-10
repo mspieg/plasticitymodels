@@ -1,0 +1,331 @@
+<?xml version='1.0' encoding='utf-8'?>
+<harness_options>
+  <length>
+    <string_value lines="1">short</string_value>
+  </length>
+  <owner>
+    <string_value lines="1">mspieg</string_value>
+  </owner>
+  <description>
+    <string_value lines="1">Convergence tests for exploring Newton solvers/preconditioners for drucker prager rheologies using a simple notch test.</string_value>
+  </description>
+  <simulations>
+    <simulation name="dp_test">
+      <input_file>
+        <string_value lines="1" type="filename">compression.tfml</string_value>
+      </input_file>
+      <run_when name="input_changed_or_output_missing"/>
+      <parameter_sweep>
+        <parameter name="eta_1">
+          <values>
+            <string_value lines="1">1.e21</string_value>
+          </values>
+        </parameter>
+        <parameter name="eta_2">
+          <values>
+            <string_value lines="1">1.e24</string_value>
+          </values>
+        </parameter>
+        <parameter name="notch">
+          <values>
+            <string_value lines="1">rounded_refine</string_value>
+            <comment>mesh style for notch,  currently square, round or round_refine</comment>
+          </values>
+        </parameter>
+        <parameter name="u0scaled">
+          <values>
+            <string_value lines="1">1.</string_value>
+          </values>
+        </parameter>
+        <parameter name="Phi">
+          <values>
+            <string_value lines="1">30</string_value>
+            <comment>available isovisc, von_mises, drucker_prager, depth_dependent_von_mises</comment>
+          </values>
+        </parameter>
+        <parameter name="plasticity_model">
+          <values>
+            <string_value lines="1">von_mises</string_value>
+            <comment>available isovisc, von_mises, drucker_prager, depth_dependent_von_mises</comment>
+          </values>
+          <update>
+            <string_value lines="20" type="code" language="python">import libspud
+from math import pi, cos, sin
+
+# initialize scaling parameters
+h = 30000.  # system height in m
+eta_0 = 1.e22   # reference viscosity (Pa s)
+u0 = 2.5e-3       # compression velocity m/yr
+rho = 2700.       # density
+g = 9.81		  # gravity
+yr_per_s = 1./3600./365.25/24.
+
+edot_0 = u0*yr_per_s/h  # reference strain_rate
+tau_0 = 2.*eta_0*edot_0  # reference stress
+
+# dimensionless parameters
+L2_on_h2 = eta_0*edot_0/rho/g/h
+
+phi = float(Phi)*pi/180.
+
+if (plasticity_model == 'von_mises'):
+	C = 1.e8
+	A = C/eta_0/edot_0
+	B = 0.
+	alpha = 0. 
+	print 'using von_mises plasticity A={0}, B={1}, alpha={2}'.format(A,B,alpha)
+elif (plasticity_model == 'drucker_prager'):
+	C = 1.e8
+	A = C*cos(phi)/eta_0/edot_0
+	B = sin(phi)
+	alpha = 1.
+	print 'using drucker_prager plasticity A={0}, B={1}, alpha={2}'.format(A,B,alpha)
+elif (plasticity_model == 'isovisc'):
+	A = 1.e10
+	B = 1.e10
+	alpha  = 0.
+	print 'using iso viscous plasticity model A={0}, B={1}, alpha={2}'.format(A,B,alpha)
+elif (plasticity_model == 'depth_dependent_von_mises'):
+	C = 1.e8
+	A = C*cos(phi)/eta_0/edot_0
+	B = sin(phi)
+	alpha = 0.
+	print 'using depth_dependent_von_mises plasticity A={0}, B={1}, alpha={2}'.format(A,B,alpha)
+else:
+	print 'cant find plasticity model {0}'.format(plasticity_model)
+
+# set the parameters in the tfml file
+# choose a mesh
+if ( notch == 'square'):
+	libspud.set_option("/geometry/mesh::Mesh/source::File/file","compression_mesh")
+elif ( notch == 'rounded'):
+	libspud.set_option("/geometry/mesh::Mesh/source::File/file","compression_mesh_rounded")
+elif ( notch == 'rounded_refine'):
+	libspud.set_option("/geometry/mesh::Mesh/source::File/file","compression_mesh_rounded_refine")
+else:
+	print 'cant find mesh for notch style {0}'.format(notch)
+
+
+# set scalar constants
+libspud.set_option("/system::SolidFlow/coefficient::L2h2/type::Constant/rank::Scalar/value::WholeMesh/constant",L2_on_h2)
+libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Bottom/constant",eta_0/float(eta_1))
+libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Top/constant",eta_0/float(eta_2))
+libspud.set_option("/system::SolidFlow/coefficient::dp_A/type::Expression/rank::Scalar/value::Top/constant",float(A))
+libspud.set_option("/system::SolidFlow/coefficient::dp_B/type::Expression/rank::Scalar/value::Top/constant",float(B))
+libspud.set_option("/system::SolidFlow/coefficient::alpha/type::Constant/rank::Scalar/value::WholeMesh/constant",float(alpha))
+libspud.set_option("/system::SolidFlow/field::Velocity/type::Function/rank::Vector/boundary_condition::Left/sub_components::U/type::Dirichlet/constant",float(u0scaled))
+libspud.set_option("/system::SolidFlow/field::Velocity/type::Function/rank::Vector/boundary_condition::Right/sub_components::U/type::Dirichlet/constant",-float(u0scaled))</string_value>
+            <single_build/>
+          </update>
+        </parameter>
+        <parameter name="NewtonIterations">
+          <values>
+            <string_value lines="1">0 1 2 3 4 5 6 7 8 9</string_value>
+          </values>
+          <update>
+            <string_value lines="20" type="code" language="python">import libspud
+libspud.set_option("/system::SolidFlow/nonlinear_solver::Solver/type::SNES/max_iterations",int(NewtonIterations))</string_value>
+            <single_build/>
+          </update>
+        </parameter>
+      </parameter_sweep>
+      <required_input>
+        <filenames name="meshfile">
+          <python>
+            <string_value lines="20" type="code" language="python">from glob import glob
+meshfile = glob('../../mesh/compression_mesh*.xml.gz')</string_value>
+          </python>
+        </filenames>
+        <filenames name="ResolvedSolution">
+          <string>
+            <string_value lines="1" type="filename">compression_resolved_SolidFlow.xml</string_value>
+          </string>
+        </filenames>
+        <filenames name="PicardStatFile">
+          <string>
+            <string_value lines="1" type="filename">compression_Picard_errors.stat</string_value>
+          </string>
+        </filenames>
+      </required_input>
+      <variables>
+        <variable name="L2ResPicard">
+          <string_value lines="20" type="code" language="python">from buckettools.statfile import parser
+conv = parser("compression_SolidFlow_Picard_snes.conv")
+L2ResPicard = conv["SolidFlow"]["res_norm(l2)"]</string_value>
+        </variable>
+        <variable name="L2ResNewton">
+          <string_value lines="20" type="code" language="python">from buckettools.statfile import parser
+conv = parser("compression_SolidFlow_Solver_snes.conv")
+L2ResNewton= conv["SolidFlow"]["res_norm(l2)"]</string_value>
+        </variable>
+        <variable name="pMax">
+          <string_value lines="20" type="code" language="python">from buckettools.statfile import parser
+stat = parser("compression.stat")
+pMax = stat["SolidFlow"]["Pressure"]["max"][-1]</string_value>
+        </variable>
+        <variable name="pMin">
+          <string_value lines="20" type="code" language="python">from buckettools.statfile import parser
+stat = parser("compression.stat")
+pMin = stat["SolidFlow"]["Pressure"]["min"][-1]</string_value>
+        </variable>
+        <variable name="dsdp_max">
+          <string_value lines="20" type="code" language="python">from buckettools.statfile import parser
+stat = parser("compression.stat")
+dsdp_max = stat["NormdSdp"]["dsdp"]["max"][-1]</string_value>
+        </variable>
+        <variable name="L2e">
+          <string_value lines="20" type="code" language="python">from buckettools.statfile import parser
+from numpy import sqrt, abs
+stat = parser("compression.stat")
+L2e= sqrt(stat["SolidFlow"]["L2NormErrorSquared"]["functional_value"][-1])</string_value>
+        </variable>
+        <variable name="L2ures">
+          <string_value lines="20" type="code" language="python">from buckettools.statfile import parser
+from numpy import sqrt, abs
+stat = parser("compression.stat")
+L2ures= sqrt(stat["ResolvedSolution"]["L2usresquared"]["functional_value"][-1])</string_value>
+        </variable>
+      </variables>
+    </simulation>
+  </simulations>
+  <tests>
+    <test name="Convergence">
+      <string_value lines="20" type="code" language="python">import numpy as np
+import matplotlib
+# set a display independent backend
+matplotlib.use('Agg')
+matplotlib.rc('text', usetex=True)
+matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
+import matplotlib.pyplot as pl
+
+def scitolatex(str):
+  '''utility script to convert scientific notation numbers like
+    1.e23 to latex formatable numbers 10^23
+  ''' 
+  split = str.split('.')
+  if split[0] == '1':
+    split[0]=''
+  else:
+    split[0] = split[0]+'\\times' 
+  split[1] = split[1].replace('e','10^{')+'}'
+
+  return split[0]+split[1]
+  
+def maprheology(pm):
+  ''' maps title of plasticity model to something that looks better type set
+  '''
+  if pm == 'von_mises':
+    return 'von Mises'
+  elif pm == 'depth_dependent_von_mises':
+    return 'depth-dependent von Mises'
+  elif pm == 'drucker_prager':
+    return 'Drucker-Prager'
+  else: 
+    return pm.replace('_',' ') 
+
+notch =  L2ResPicard.parameters["notch"]
+eta_1 =  L2ResPicard.parameters["eta_1"]
+model = L2ResPicard.parameters["plasticity_model"]
+u0scaled = L2ResPicard.parameters["u0scaled"]
+Phi = L2ResPicard.parameters["Phi"][-1]
+Its = L2ResPicard.parameters["NewtonIterations"]
+maxIts = Its[-1]
+
+print 'model = ',model
+print 'notch = ',notch
+print 'eta_1 = ',eta_1
+print 'Phi = ',Phi
+print 'Its = ',Its
+print 'maxIts =', maxIts
+
+eta = [ float(eta_1[i]) for i in range(len(eta_1)) ]
+
+print eta
+
+style = notch[0]
+
+# Get Newton errors
+L2ErrorNewton = np.array([ L2e[{"NewtonIterations":i}] for i in Its ])
+L2uResolved = np.array([ L2ures[{"NewtonIterations":i}] for i in Its ])
+print 'L2ErrorNewton = ',L2ErrorNewton
+print 'L2uResolved = ', L2uResolved
+RelErrorNewton = L2ErrorNewton/L2uResolved
+RelErrorNewton = RelErrorNewton
+print 'RelErrorNewton=', RelErrorNewton
+
+# Get old PicardErrors
+from buckettools.statfile import parser
+from numpy import sqrt, abs
+stat = parser("compression_Picard_errors.stat")
+L2ePicard= sqrt(stat["SolidFlow"]["ErrorL2us"]["functional_value"])
+L2uresPicard = sqrt(stat["ResolvedSolution"]["L2usresquared"]["functional_value"])
+RelErrorPicard = L2ePicard/L2uresPicard
+RelErrorPicard = RelErrorPicard[2:]
+
+print 'RelErrorPicard = ',RelErrorPicard
+
+for pm in model:
+  pl.figure()
+  linetype = iter(["-", "--", ":"])
+  for u0 in u0scaled:
+    color = iter(['r', 'g', 'b', 'k', 'y', 'c', 'm'])
+    lt = next(linetype)
+    for eta in eta_1:
+      adict = {"plasticity_model":pm,"eta_1":eta,"notch":style,"u0scaled":u0,"Phi":Phi,"NewtonIterations":maxIts}
+      c = next(color)
+      L2ResidualP= L2ResPicard[adict]
+      L2ResidualN= L2ResNewton[adict]
+      itP = np.arange(len(L2ResidualP))
+      itN = len(L2ResidualP) -1 + np.arange(len(L2ResidualN))
+      print 'itP =',itP, ' itN =', itN
+      pl.semilogy(itP,L2ResidualP,color=c,linestyle=lt,marker='o')
+      pl.hold(True)
+      pl.semilogy(itP,RelErrorPicard,color='b',linestyle=lt,marker='o')
+      eta_s = scitolatex(eta)
+      pl.semilogy(itN[:-1],RelErrorNewton[:-1],color='b',linestyle=lt,marker='s',label='$||\\boldsymbol{x} - \\boldsymbol{x}^*||_{L2}/||\\boldsymbol{x}^*||_{L2}$')
+      pl.semilogy(itN,L2ResidualN,linestyle=lt,color = c,marker = 's',label='$||\\boldsymbol{F}||_2$')
+
+
+  if 'depth' in pm:
+    loc = (0.57,0.01)
+  else:
+    loc = 'best'
+  ticks = 10**np.linspace(-10,2,7)
+  pl.gca().set_yticks(ticks)
+  pl.tick_params(axis='both', which='major', labelsize=20)
+  pl.legend(loc=loc,fontsize=16)
+  pl.xlabel('Iterations',fontsize=20)
+  pl.ylabel('Error Measures',fontsize=20)
+  pl.title('{0}, $\eta_1 ={1}$ Pa s, $U_0=${2} mm/yr'.format(maprheology(pm),scitolatex(eta),float(u0)*2.5),fontsize=24)
+  pl.savefig('Convergence_{0}only_Phi_{1}_picard_newton.pdf'.format(pm,Phi))</string_value>
+      <comment>try to get fancy and make single convergence plot for the composite solver</comment>
+    </test>
+    <test name="Pmax">
+      <string_value lines="20" type="code" language="python">print pMax</string_value>
+    </test>
+    <test name="Pmin">
+      <string_value lines="20" type="code" language="python">print pMin</string_value>
+    </test>
+    <test name="Errors">
+      <string_value lines="20" type="code" language="python">import numpy as np
+Its = L2ResPicard.parameters["NewtonIterations"]
+#print Its
+#print L2e
+#print L2ures
+L2ErrorNewton = np.array([ L2e[{"NewtonIterations":i}] for i in Its ])
+L2uResolved = np.array([ L2ures[{"NewtonIterations":i}] for i in Its ])
+print 'L2ErrorNewton = ',L2ErrorNewton
+print 'L2uResolved = ', L2uResolved
+RelErrorNewton = L2ErrorNewton/L2uResolved
+print 'RelErrorNewton=', RelErrorNewton
+
+from buckettools.statfile import parser
+from numpy import sqrt, abs
+stat = parser("compression_Picard_errors.stat")
+L2ePicard= sqrt(stat["SolidFlow"]["ErrorL2us"]["functional_value"])
+L2uresPicard = sqrt(stat["ResolvedSolution"]["L2usresquared"]["functional_value"])
+RelErrorPicard = L2ePicard/L2uresPicard
+print 'RelErrorPicard = ',RelErrorPicard</string_value>
+    </test>
+  </tests>
+</harness_options>
