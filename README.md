@@ -3,8 +3,7 @@
 This repository contains supplementary [*TerraFERMA*](http://terraferma.github.io) model files to accompany the paper 
 
 >Spiegelman, M, David May and Cian R Wilson, 
-*Lessons and insights into effective solvers for
- visco-plasticity in geodynamics*, submitted to GCubed, 2015
+*On the solvability of incompressible viscoplastic rheologies in geodynamics*, GCubed, 2016
 
 ### Contents ###
 This repo contains the directories
