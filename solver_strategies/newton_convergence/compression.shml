@@ -18,12 +18,12 @@
       <parameter_sweep>
         <parameter name="eta_1">
           <values>
-            <string_value lines="1">1.e21</string_value>
+            <string_value lines="1">1.e24</string_value>
           </values>
         </parameter>
         <parameter name="eta_2">
           <values>
-            <string_value lines="1">1.e24</string_value>
+            <string_value lines="1">1.e21</string_value>
           </values>
         </parameter>
         <parameter name="notch">
@@ -108,8 +108,8 @@ else:
 
 # set scalar constants
 libspud.set_option("/system::SolidFlow/coefficient::L2h2/type::Constant/rank::Scalar/value::WholeMesh/constant",L2_on_h2)
-libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Bottom/constant",eta_0/float(eta_1))
-libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Top/constant",eta_0/float(eta_2))
+libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Bottom/constant",eta_0/float(eta_2))
+libspud.set_option("/system::SolidFlow/coefficient::inv_eta0/type::Expression/rank::Scalar/value::Top/constant",eta_0/float(eta_1))
 libspud.set_option("/system::SolidFlow/coefficient::dp_A/type::Expression/rank::Scalar/value::Top/constant",float(A))
 libspud.set_option("/system::SolidFlow/coefficient::dp_B/type::Expression/rank::Scalar/value::Top/constant",float(B))
 libspud.set_option("/system::SolidFlow/coefficient::alpha/type::Constant/rank::Scalar/value::WholeMesh/constant",float(alpha))
@@ -295,7 +295,7 @@ for pm in model:
   pl.tick_params(axis='both', which='major', labelsize=20)
   pl.legend(loc=loc,fontsize=16)
   pl.xlabel('Iterations',fontsize=20)
-  pl.ylabel('Error Measures',fontsize=20)
+  pl.ylabel('Error measures',fontsize=20)
   pl.title('{0}, $\eta_1 ={1}$ Pa s, $U_0=${2} mm/yr'.format(maprheology(pm),scitolatex(eta),float(u0)*2.5),fontsize=24)
   pl.savefig('Convergence_{0}only_Phi_{1}_picard_newton.pdf'.format(pm,Phi))</string_value>
       <comment>try to get fancy and make single convergence plot for the composite solver</comment>

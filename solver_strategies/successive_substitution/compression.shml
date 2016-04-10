@@ -249,7 +249,7 @@ for pm in model:
 	  pl.tick_params(axis='both', which='major', labelsize=20)
 	  pl.xlabel('Iterations',fontsize=20)
 	  pl.ylabel('Error measures',fontsize=20)
-	  pl.title('{0}, $\\eta_1={1}$ Pa s'.format(maprheology(pm),etal),fontsize=24)
+	  pl.title('{0}, $\eta_1 ={1}$ Pa s, $U_0=$2.5 mm/yr'.format(maprheology(pm),scitolatex(eta)),fontsize=24)
 	  pl.savefig('Convergence_{0}_sse.pdf'.format(pm))</string_value>
       <comment>try to get fancy and make single convergence plot for the composite solver</comment>
     </test>
