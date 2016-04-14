@@ -13,6 +13,7 @@ This repo contains the directories
 	* **newton-convergence**: (Figure 3)
 	* **newton:** Hybrid Picard-Newton schemes (Figure 5 and data for Figure 6)
 	* **alpha-continuation:** Newton with continuation in the $\alpha$ parameter (Figure 7 and data for Figure 8)
+* **one_layer:** A simplified version of this problem with just a single visco-plastic layer and a free-stress bottom.  Just includes hybrid Newton-Picard schemes.
 * **meshes:** gmsh input files and Dolfin Meshes used in the models
 * **paraview:** Paraview State files for assisting visualization of model results
 
