@@ -38,4 +38,4 @@ This repo contains the directories
 
 
 ### Questions and Comments ###
-Please address any questions or comments through the [issue tracker](https://bitbucket.org/mspieg/plasticitymodels/issues?status=new&status=open) 
+Please address any questions or comments through the [issue tracker](https://github.com/mspieg/plasticitymodels/issues)
